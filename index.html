@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #0a1e46;
+            background: #f2f4f8;
             margin: 0;
             padding: 0;
             display: flex;
@@ -58,14 +58,18 @@
             color: green;
             font-weight: bold;
         }
+        
+        .error {
+            color: red;
+        }
     </style>
 </head>
 
 <body>
     <div class="card">
         <h1>Smart NFC Attendance</h1>
-        <p>Tap “Start Scan” and hold your NFC card near the phone.</p>
-        <button id="scanBtn">Start Scan</button>
+        <p>Tap “Now Scan the Card” and hold your NFC card near your phone.</p>
+        <button id="scanBtn">Now Scan the Card</button>
 
         <div class="output" id="output"></div>
     </div>
@@ -74,38 +78,45 @@
         const scanBtn = document.getElementById('scanBtn');
         const output = document.getElementById('output');
 
-        // Check if NFC is supported
         if (!('NDEFReader' in window)) {
-            output.innerHTML = "❌ NFC not supported in this browser.";
+            output.innerHTML = "❌ NFC not supported in this browser. Try Chrome on Android.";
             scanBtn.disabled = true;
         }
 
         scanBtn.addEventListener('click', async() => {
             try {
                 const ndef = new NDEFReader();
+                output.innerHTML = "📡 Scanning started... Please tap your NFC card.";
                 await ndef.scan();
-                output.innerHTML = "📡 Waiting for NFC tag...";
 
-                ndef.onreading = event => {
+                ndef.onreading = (event) => {
                     const decoder = new TextDecoder();
-                    let tagContent = "";
+                    let uidText = "";
+
                     for (const record of event.message.records) {
-                        tagContent += decoder.decode(record.data);
+                        uidText += decoder.decode(record.data);
                     }
 
-                    // Display result
-                    output.innerHTML = `
-            ✅ Attendance Marked<br>
-            <strong>UID:</strong> ${tagContent}<br>
-            <span class="success">Recorded at ${new Date().toLocaleTimeString()}</span>
-          `;
+                    if (uidText.trim() !== "") {
+                        output.innerHTML = `
+              ✅ Card detected!<br>
+              <strong>UID:</strong> ${uidText}<br>
+              <span class="success">Attendance marked at ${new Date().toLocaleTimeString()}</span>
+            `;
 
-                    // Optionally store attendance in localStorage
-                    localStorage.setItem(tagContent, new Date().toISOString());
+                        // Save locally
+                        localStorage.setItem(uidText, new Date().toISOString());
+                    } else {
+                        output.innerHTML = "⚠️ Empty tag detected. Please check your NFC card.";
+                    }
                 };
 
-            } catch (error) {
-                output.innerHTML = "⚠️ NFC scan failed: " + error;
+                ndef.onerror = () => {
+                    output.innerHTML = "⚠️ Error reading NFC tag. Try again.";
+                };
+
+            } catch (err) {
+                output.innerHTML = `<span class="error">⚠️ NFC scan failed:</span> ${err}`;
             }
         });
     </script>
