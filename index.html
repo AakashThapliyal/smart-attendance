@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart NFC Attendance</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0a1e46;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        .card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        button {
+            background: #0078ff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #005ec9;
+        }
+        
+        .output {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #222;
+            word-wrap: break-word;
+        }
+        
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Smart NFC Attendance</h1>
+        <p>Tap “Start Scan” and hold your NFC card near the phone.</p>
+        <button id="scanBtn">Start Scan</button>
+
+        <div class="output" id="output"></div>
+    </div>
+
+    <script>
+        const scanBtn = document.getElementById('scanBtn');
+        const output = document.getElementById('output');
+
+        // Check if NFC is supported
+        if (!('NDEFReader' in window)) {
+            output.innerHTML = "❌ NFC not supported in this browser.";
+            scanBtn.disabled = true;
+        }
+
+        scanBtn.addEventListener('click', async() => {
+            try {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                output.innerHTML = "📡 Waiting for NFC tag...";
+
+                ndef.onreading = event => {
+                    const decoder = new TextDecoder();
+                    let tagContent = "";
+                    for (const record of event.message.records) {
+                        tagContent += decoder.decode(record.data);
+                    }
+
+                    // Display result
+                    output.innerHTML = `
+            ✅ Attendance Marked<br>
+            <strong>UID:</strong> ${tagContent}<br>
+            <span class="success">Recorded at ${new Date().toLocaleTimeString()}</span>
+          `;
+
+                    // Optionally store attendance in localStorage
+                    localStorage.setItem(tagContent, new Date().toISOString());
+                };
+
+            } catch (error) {
+                output.innerHTML = "⚠️ NFC scan failed: " + error;
+            }
+        });
+    </script>
+</body>
+
+</html>
